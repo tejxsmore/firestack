@@ -80,25 +80,31 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
 
   return (
     <div className="p-5 space-y-5">
-      <div className="flex justify-between items-center gap-4">
-        <SearchBar tools={tools} query={searchQuery} setQuery={setSearchQuery} />
-        <button onClick={() => setIsOpen(true)}>Filters</button>
+      <div className="lg:max-w-lg mx-auto my-10 mb-30 space-y-10">
+        <p className="text-center text-4xl font-bold">
+          Cut Through the Noise, Find Tools That Work
+        </p>
+        <div className="flex items-center gap-5">
+          <SearchBar tools={tools} query={searchQuery} setQuery={setSearchQuery} />
+          <button onClick={() => setIsOpen(true)}>Filters</button>
+        </div>
       </div>
 
       {isOpen && (
         <div className="fixed inset-0 h-full z-40 flex items-center justify-center backdrop-blur-sm">
-          <div ref={modalRef} className="p-4 rounded shadow-md w-full max-w-sm">
-            <div className="flex justify-between items-center mb-2">
+          <div ref={modalRef} className="p-5 space-y-5 rounded shadow-md w-full max-w-md
+          bg-[#030303]">
+            <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Categories</h3>
-              <button onClick={() => setIsOpen(false)}><X /></button>
+              <button className="cursor-pointer" onClick={() => setIsOpen(false)}><X /></button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-5">
               {categories.map((cat) => (
                 <button
                   key={cat.slug}
                   onClick={() => toggleCategory(cat.slug)}
-                  className={`px-2 py-1 rounded border ${
-                    selected.includes(cat.slug) ? "bg-gray-800" : "bg-black"
+                  className={`px-5 py-2 rounded border rounded-[10px] cursor-pointer ${
+                    selected.includes(cat.slug) ? "bg-[#222831]" : "bg-transparent"
                   }`}
                 >
                   {cat.name}
@@ -117,22 +123,22 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
         {filteredTools.map(({ name, slug, logo: { url }, description, websiteUrl }) => (
-          <div key={slug} className="p-4 border rounded flex flex-col">
-            <div className="w-16 h-16 border mb-2 flex items-center justify-center">
+          <div key={slug} className="p-5 space-y-5 border rounded-[20px] rounded flex flex-col">
+            <div className="w-10 h-10 p-2 bg-white border rounded-[10px] flex items-center justify-center">
               <img src={url} alt={`Logo of ${name}`} className="w-full h-full object-contain" />
             </div>
             <a href={`/tools/${slug}`}>
               <h3 className="text-base font-semibold">{name}</h3>
             </a>
-            <p className="text-sm text-gray-600 flex-grow">
+            <p className="text-sm text-gray-300 flex-grow">
               {description.length > 100 ? description.slice(0, 100) + "..." : description}
             </p>
             <a
               href={websiteUrl}
               target="_blank"
-              className="block mt-2 underline text-sm"
+              className="block px-5 py-2 text-sm text-center border rounded-[10px]"
             >
               Visit {name}
             </a>

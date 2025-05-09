@@ -19,7 +19,7 @@ export default function SearchBar({ tools, query, setQuery }: Props) {
 
   return (
     <div className="relative w-full">
-      <div className="flex items-center w-full border border-gray-400 rounded-lg">
+      <div className="flex items-center w-full border rounded-[10px]">
         <Search size={16} className="ml-3 text-gray-500" />
         <input
           type="text"

@@ -38,12 +38,13 @@ const op: Author | undefined = json?.data?.authors?.find((p: Author) => p.slug =
 ---
 
 <MainLayout>
-  <div class="">
-    <h1 class="">{op?.name}</h1>
-    {op?.post.map(({title, slug}, i) => (
-        <div>
-            <a href={`/blogs/${slug}`}>{i + 1}. {title}</a>
-        </div>
-    ))}
+  <div class="w-full lg:max-w-4xl mx-auto">
+    <div class="p-5 grid sm:grid-cols-2 gap-5">
+      {op?.post.map(({title, slug}) => (
+          <a href={`/blogs/${slug}`} class="p-5 border rounded-[20px]">
+              <h2>{title}</h2>
+          </a>
+      ))}
+    </div>
   </div>
 </MainLayout>

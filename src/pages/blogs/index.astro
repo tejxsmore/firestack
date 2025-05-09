@@ -4,6 +4,9 @@ import MainLayout from "../../layouts/MainLayout.astro";
 interface Post {
   title: string;
   slug: string;
+  tag:{
+    name: string
+  }[]
 }
 
 const query = {
@@ -15,6 +18,9 @@ const query = {
         posts {
           title
           slug
+          tag{
+            name
+          }
         }
       }`,
   }),
@@ -26,13 +32,18 @@ const posts: Post[] = json.data.posts ?? [];
 ---
 
 <MainLayout>
-  <div class="">
-    {posts.map(({ title, slug}, i) => (
-      <a href={`/blogs/${slug}`} class="">
-        <div class="">
-          <h2 class="">{title}</h2>
-        </div>
-      </a>
-    ))}
+  <div class="w-full lg:max-w-4xl mx-auto">
+    <div class="p-5 grid sm:grid-cols-2 gap-5">
+      {posts.map(({ title, slug, tag}) => (
+        <a href={`/blogs/${slug}`} class="p-5 border rounded-[20px] space-y-5">
+            <h2 class="">{title}</h2>
+            <div class="flex flex-wrap gap-5">
+              {tag.map(({name}) => (
+                <button class="px-5 py-2 border rounded-[10px]">{name}</button>
+              ))}
+            </div>
+        </a>
+      ))}
+    </div>
   </div>
 </MainLayout>
