@@ -86,8 +86,8 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center backdrop-blur-sm">
-          <div ref={modalRef} className="bg-white p-4 rounded shadow-md w-full max-w-sm">
+        <div className="fixed inset-0 h-full z-40 flex items-center justify-center backdrop-blur-sm">
+          <div ref={modalRef} className="p-4 rounded shadow-md w-full max-w-sm">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-semibold">Categories</h3>
               <button onClick={() => setIsOpen(false)}><X /></button>
@@ -98,7 +98,7 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
                   key={cat.slug}
                   onClick={() => toggleCategory(cat.slug)}
                   className={`px-2 py-1 rounded border ${
-                    selected.includes(cat.slug) ? "bg-black text-white" : "bg-gray-100"
+                    selected.includes(cat.slug) ? "bg-gray-800" : "bg-black"
                   }`}
                 >
                   {cat.name}
