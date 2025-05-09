@@ -1,0 +1,35 @@
+---
+const { title = "Firestack 🔥" } = Astro.props
+import "../styles/global.css"
+
+import Navbar from "../components/Navbar.astro"
+import { Toaster } from 'react-hot-toast'
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <Navbar />
+    <Toaster client:visible
+        position="bottom-center"
+        toastOptions={{
+        	duration: 3000,
+            className: 'mb-16 lg:mb-4',
+            style: {
+                borderRadius: '20px',
+                background: '#222222',
+                border: '1px solid #1DCD9F',
+                padding: '12px 16px',
+                color: '#F1EFEC',
+            },
+        }}
+    />
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,38 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+
+interface Post {
+  title: string;
+  slug: string;
+}
+
+const query = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    query: `
+      {
+        posts {
+          title
+          slug
+        }
+      }`,
+  }),
+};
+
+const response = await fetch(import.meta.env.HYGRAPH_API, query);
+const json = await response.json();
+const posts: Post[] = json.data.posts ?? [];
+---
+
+<MainLayout>
+  <div class="">
+    {posts.map(({ title, slug}, i) => (
+      <a href={`/blogs/${slug}`} class="">
+        <div class="">
+          <h2 class="">{title}</h2>
+        </div>
+      </a>
+    ))}
+  </div>
+</MainLayout>

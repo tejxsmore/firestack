@@ -1,16 +1,67 @@
 ---
+import MainLayout from "../layouts/MainLayout.astro";
+import ToolFilter from "../components/ToolFilter";
 
+interface Tool {
+  name: string;
+  slug: string;
+  logo: {
+    url: string;
+  };
+  description: string;
+  websiteUrl: string;
+  category: {
+    name: string;
+    slug: string;
+  };
+}
+
+interface Category {
+  name: string;
+  slug: string;
+}
+
+let toolData: Tool[] = [];
+let categoryData: Category[] = [];
+
+try {
+  const query = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: `
+        {
+          tools {
+            name
+            slug
+            logo {
+              url
+            }
+            description
+            websiteUrl
+            category {
+              name
+              slug
+            }
+          }
+          categories {
+            name
+            slug
+          }
+        }
+      `,
+    }),
+  };
+
+  const response = await fetch(import.meta.env.HYGRAPH_API, query);
+  const json = await response.json();
+  toolData = json.data.tools;
+  categoryData = json.data.categories;
+} catch (error) {
+  console.error("Failed to fetch data:", error);
+}
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<MainLayout>
+  <ToolFilter client:load tools={toolData} categories={categoryData} />
+</MainLayout>

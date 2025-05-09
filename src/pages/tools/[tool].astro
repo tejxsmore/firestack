@@ -1,0 +1,68 @@
+---
+export const prerender = false;
+import MainLayout from "../../layouts/MainLayout.astro";
+import MarkdownRenderer from "../../components/MarkdownRenderer"
+
+const { tool } = Astro.params;
+
+interface Tool {
+  name: string;
+  slug: string;
+  logo:{
+    url: string
+  }
+  description: string;
+  features: string;
+  websiteUrl: string;
+  category:{
+    name: string;
+  }
+}
+
+const query = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    query: `
+      {
+        tools {
+          name
+          slug
+          logo{
+            url
+          }
+          description
+          features
+          websiteUrl
+          category{
+            name
+          }
+        }
+      }`,
+  }),
+};
+
+const response = await fetch(import.meta.env.HYGRAPH_API, query);
+const json = await response.json();
+const toolData: Tool | undefined = json?.data?.tools?.find((p: Tool) => p.slug === tool);
+---
+
+<MainLayout>
+    <div class="">
+        <div class="">
+          <div class="">
+            <div class="">
+              <img src={toolData?.logo.url} alt={`Logo of ${toolData?.name}`}>
+            </div>
+            <h1 class="">{toolData?.name}</h1>
+            <p class="">{toolData?.description}</p>
+          </div>
+
+          <div class="">
+            <div class="">
+              <MarkdownRenderer content={toolData?.features!} />
+            </div>
+          </div>
+        </div>
+    </div>    
+</MainLayout>  

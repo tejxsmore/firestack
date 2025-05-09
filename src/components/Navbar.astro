@@ -1,0 +1,17 @@
+---
+import { SignedIn, SignedOut, SignInButton, SignOutButton } from '@clerk/astro/components'
+---
+<div class="p-5 flex justify-between items-center">
+    <div class="flex items-end gap-10">
+      <a href="/" class="text-4xl font-bold">Firestack</a>
+      <a href="/blogs" class="text-lg font-normal">Blogs</a>
+    </div>
+    <div>
+        <SignedOut>
+            <SignInButton mode="modal" />
+        </SignedOut>
+        <SignedIn>
+            <SignOutButton />
+        </SignedIn>
+    </div>
+  </div>

@@ -1,0 +1,72 @@
+---
+import MarkdownRenderer from "../../components/MarkdownRenderer";
+import BlogLayout from "../../layouts/BlogLayout.astro";
+
+const { blog } = Astro.params
+
+interface Post {
+  title: string;
+  slug: string;
+  author:{
+    name: string;
+    slug: string;
+  }
+  date:string
+  tag:{
+    name:string
+    slug:string
+  }[]
+  content:{
+    markdown: string;
+  }
+}
+
+const query = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    query: `
+      {
+        posts {
+          title
+          slug
+          author{
+            name
+            slug
+          }
+          tag{
+            name
+            slug
+          }
+          date
+          content{
+            markdown
+          }
+        }
+      }`,
+  }),
+};
+
+const response = await fetch(import.meta.env.HYGRAPH_API, query);
+const json = await response.json();
+const post: Post | null = json.data.posts.find((p: Post) => p.slug === blog)
+---
+
+<BlogLayout>
+  <div>
+    <h1>{post?.title}</h1>
+    <a href={`/blogs/author/${post?.author.slug}`}>{post?.author.name}</a>
+    <p>{post?.date}</p>
+    <div class="flex flex-wrap">
+      {post?.tag.map(({ name, slug }) => (
+        <a 
+          href={`/tags/${slug}`} 
+          class=""
+        >
+          {name}
+        </a>
+      ))}
+    </div>
+    <MarkdownRenderer content={post?.content.markdown!} />
+  </div>
+</BlogLayout>
