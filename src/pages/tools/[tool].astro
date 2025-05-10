@@ -1,63 +1,118 @@
 ---
 export const prerender = false;
+
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import MainLayout from "../../layouts/MainLayout.astro";
 
-const { tool } = Astro.params;
-
 interface Tool {
-  name: string;
-  slug: string;
-  logo:{
-    url: string
-  }
-  description: string;
-  features: string;
-  websiteUrl: string;
-  category:{
     name: string;
-  }
+    slug: string;
+    logo: {
+        url: string;
+    };
+    description: string;
+    features: string;
+    websiteUrl: string;
+    category: {
+        name: string;
+    };
 }
 
-const query = {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    query: `
-      {
-        tools {
-          name
-          slug
-          logo{
-            url
-          }
-          description
-          features
-          websiteUrl
-          category{
-            name
-          }
-        }
-      }`,
-  }),
+// Define error states
+interface PageData {
+    error?: string;
+    loading: boolean;
+    toolData?: Tool;
+}
+
+// Initialize page data with loading state
+const pageData: PageData = {
+    loading: true
 };
 
-const response = await fetch(import.meta.env.HYGRAPH_API, query);
-const json = await response.json();
-const toolData: Tool | undefined = json?.data?.tools?.find((p: Tool) => p.slug === tool);
----
+try {
+    // Fetch data with error handling
+    const response = await fetch(import.meta.env.HYGRAPH_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            query: `
+                {
+                    tools {
+                        name
+                        slug
+                        logo {
+                            url
+                        }
+                        description
+                        features
+                        websiteUrl
+                        category {
+                            name
+                        }
+                    }
+                }
+            `,
+        }),
+    });
 
+    // Check if response was successful
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const json = await response.json();
+    
+    // Find tool and handle potential undefined cases
+    pageData.toolData = json?.data?.tools?.find((tool: Tool) => tool.slug === Astro.params.tool);
+    
+    // Set loading state to false after successful fetch
+    pageData.loading = false;
+} catch (error) {
+    pageData.error = error instanceof Error ? error.message : 'An unknown error occurred';
+    pageData.loading = false;
+}
+---
 <MainLayout>
-    <div class="p-5 space-y-5">
-        <div class="">
-            <div class="">
-              <img src={toolData?.logo.url} alt={`Logo of ${toolData?.name}`}>
+    <div class="px-5 py-10 max-w-4xl mx-auto text-gray-300">
+        {/* Loading State */}
+        {pageData.loading && (
+            <div class="text-center py-8">
+                <span class="text-xl font-semibold">Loading...</span>
             </div>
-            <h1 class="">{toolData?.name}</h1>
-            <p class="">{toolData?.description}</p>
-            <div class="w-full md:max-w-3xl">
-              <MarkdownRenderer content={toolData?.features!} />
+        )}
+
+        {/* Error State */}
+        {pageData.error && (
+            <div class="text-center text-red-500 py-8">
+                <span class="text-xl font-semibold">{pageData.error}</span>
             </div>
-        </div>
-    </div>    
-</MainLayout>  
+        )}
+
+        {/* Success State */}
+        {pageData.toolData && !pageData.error && !pageData.loading && (
+            <div class="space-y-10">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                    <div class="w-20 p-2 rounded-[16px] flex items-center justify-center bg-[#1e1e1e] border border-[#2c2c2c] shadow-inner shadow-[#00000033] z-10 relative">
+                        <img
+                            src={pageData.toolData.logo.url}
+                            alt={`Logo of ${pageData.toolData.name}`}
+                            class="w-full h-full object-contain rounded-[12px]"
+                        />
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">{pageData.toolData.name}</h1>
+                        <p class="mt-2 text-lg text-gray-400">{pageData.toolData.category.name}</p>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <p class="text-base leading-relaxed text-gray-400 border-l-4 border-orange-500 pl-4 bg-[#1e1e1e] rounded-lg py-3">
+                    {pageData.toolData.description}
+                </p>
+
+              <MarkdownRenderer content={pageData.toolData.features} />
+          </div>
+        )}
+    </div>
+</MainLayout>

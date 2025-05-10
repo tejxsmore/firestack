@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import SearchBar from "./SearchBar";
+import LavaRocks from "./LavaRocks";
 
 interface Tool {
   name: string;
@@ -28,34 +29,17 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
   const modalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    setSearchQuery(urlParams.get("search") || "");
+    const params = new URLSearchParams(window.location.search);
+    setSearchQuery(params.get("search") || "");
   }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (searchQuery.length > 1) {
-      url.searchParams.set("search", searchQuery);
-    } else {
-      url.searchParams.delete("search");
-    }
+    searchQuery.length > 1
+      ? url.searchParams.set("search", searchQuery)
+      : url.searchParams.delete("search");
     window.history.replaceState({}, "", url.toString());
   }, [searchQuery]);
-
-  const toggleCategory = (slug: string) => {
-    setSelected((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
-    );
-  };
-
-  const filteredTools = tools.filter((tool) => {
-    const matchesCategory =
-      selected.length === 0 || selected.includes(tool.category.slug);
-    const matchesSearch =
-      searchQuery.length < 2 ||
-      tool.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
 
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
@@ -78,68 +62,125 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
     };
   }, [isOpen]);
 
+  const toggleCategory = (slug: string) =>
+    setSelected((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    );
+
+  const filteredTools = tools.filter(
+    (tool) =>
+      (selected.length === 0 || selected.includes(tool.category.slug)) &&
+      (searchQuery.length < 2 ||
+        tool.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="p-5 space-y-5">
-      <div className="lg:max-w-lg mx-auto my-10 mb-30 space-y-10">
-        <p className="text-center text-4xl font-bold">
-          Cut Through the Noise, Find Tools That Work
-        </p>
+      <LavaRocks />
+      <div className="md:max-w-2xl mx-auto my-10 mb-30 space-y-10">
+        <div className="text-center">
+          <h1 className="text-5xl font-bold leading-tight">
+            Cut Through the Noise,
+            <br />
+            <span className="bg-gradient-to-r from-amber-500 via-orange-600 to-red-700 text-transparent bg-clip-text">
+              Find Tools
+            </span>
+            <span> That Work</span>
+          </h1>
+        </div>
         <div className="flex items-center gap-5">
           <SearchBar tools={tools} query={searchQuery} setQuery={setSearchQuery} />
-          <button onClick={() => setIsOpen(true)}>Filters</button>
+          <button
+            onClick={() => setIsOpen(true)}
+            className="px-6 py-3 rounded-[16px] text-white bg-[#14100f] border 
+            border-[#3a2a1e] hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors 
+            text-base font-medium z-20 cursor-pointer"
+          >
+            Filters
+          </button>
         </div>
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 h-full z-40 flex items-center justify-center backdrop-blur-sm">
-          <div ref={modalRef} className="p-5 space-y-5 rounded shadow-md w-full max-w-md
-          bg-[#030303]">
+        <div className="fixed inset-0 z-40 flex items-center justify-center backdrop-blur-sm h-full">
+          <div
+            ref={modalRef}
+            className="relative w-full max-w-md p-6 space-y-5 rounded-[20px] bg-[#0e0e0e] border border-[#2c2c2c]"
+          >
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Categories</h3>
-              <button className="cursor-pointer" onClick={() => setIsOpen(false)}><X /></button>
+              <h3 className="text-lg font-semibold text-white">Categories</h3>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-white hover:text-red-400 transition-colors cursor-pointer"
+              >
+                <X />
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-5">
-              {categories.map((cat) => (
+              {categories.map(({ name, slug }) => (
                 <button
-                  key={cat.slug}
-                  onClick={() => toggleCategory(cat.slug)}
-                  className={`px-5 py-2 rounded border rounded-[10px] cursor-pointer ${
-                    selected.includes(cat.slug) ? "bg-[#222831]" : "bg-transparent"
+                  key={slug}
+                  onClick={() => toggleCategory(slug)}
+                  className={`px-6 py-3 rounded-[16px] border text-sm cursor-pointer ${
+                    selected.includes(slug)
+                      ? "bg-[#2a1e17] border-[#ff6a00] text-white font-semibold"
+                      : "rounded-[16px] bg-[#14100f] text-white border border-[#3a2a1e] hover:bg-[#1e1917] hover:border-[#5a3a1e]"
                   }`}
                 >
-                  {cat.name}
+                  {name}
                 </button>
               ))}
             </div>
-            <div className="mt-4 flex justify-between text-sm">
-              <button onClick={() => setSelected([])} className="underline">
-                Clear All
-              </button>
-              <button onClick={() => setIsOpen(false)} className="underline">
-                Done
-              </button>
-            </div>
+
+            <button
+              onClick={() => setSelected([])}
+              disabled={selected.length === 0}
+              className={`px-6 py-2 rounded-[16px] w-full transition-colors border text-white cursor-pointer
+                ${selected.length > 0 
+                  ? "bg-[#8E1616] border-red-900 hover:bg-red-950" 
+                  : "bg-[#1a1a1a] border-[#2c2c2c] cursor-not-allowed opacity-50"}`}
+            >
+              Clear All
+            </button>
+
           </div>
         </div>
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
-        {filteredTools.map(({ name, slug, logo: { url }, description, websiteUrl }) => (
-          <div key={slug} className="p-5 space-y-5 border rounded-[20px] rounded flex flex-col">
-            <div className="w-10 h-10 p-2 bg-white border rounded-[10px] flex items-center justify-center">
-              <img src={url} alt={`Logo of ${name}`} className="w-full h-full object-contain" />
-            </div>
-            <a href={`/tools/${slug}`}>
-              <h3 className="text-base font-semibold">{name}</h3>
+        {filteredTools.map(({ name, slug, logo, description, websiteUrl }) => (
+          <div
+            key={slug}
+            className="p-5 space-y-5 rounded-[20px] border flex flex-col relative overflow-hidden hover:brightness-110 z-20"
+            style={{
+              background: "radial-gradient(circle at top left, #1a1a1a, #0d0d0d)",
+              borderColor: "#2c2c2c",
+            }}
+          >
+            <a
+              href={`/tools/${slug}`}
+              className="w-12 h-12 p-2 rounded-[12px] flex items-center justify-center bg-[#1e1e1e] border border-[#2c2c2c] shadow-inner shadow-[#00000033] z-10 relative"
+            >
+              <img
+                src={logo.url}
+                alt={`Logo of ${name}`}
+                className="w-full h-full object-contain rounded-[6px]"
+              />
             </a>
-            <p className="text-sm text-gray-300 flex-grow">
+            <a href={`/tools/${slug}`} className="z-10 relative text-lg font-semibold text-white">
+              {name}
+            </a>
+            <p className="text-sm text-gray-300 z-10 relative flex-grow">
               {description.length > 100 ? description.slice(0, 100) + "..." : description}
             </p>
             <a
               href={websiteUrl}
               target="_blank"
-              className="block px-5 py-2 text-sm text-center border rounded-[10px]"
-            >
+              rel="noopener noreferrer"
+              className="z-10 relative inline-block px-6 py-3 text-sm text-center 
+              rounded-[16px] bg-[#14100f] text-white border border-[#3a2a1e] 
+              hover:bg-[#1e1917] hover:border-[#5a3a1e] transition-colors"
+              >
               Visit {name}
             </a>
           </div>

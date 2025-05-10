@@ -1,14 +1,35 @@
----
-export const prerender = false
+--- 
+export const prerender = false;
 import MainLayout from "../../layouts/MainLayout.astro";
+
+function formatDate(isoDate: string) {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}/.test(isoDate)) {
+    throw new Error("Invalid date format. Please use YYYY-MM-DD");
+  }
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  if (isNaN(date.getTime())) {
+    throw new Error("Invalid date");
+  }
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  return `${day} ${months[month - 1]}, ${year}`;
+}
 
 interface Tag {
   name: string;
   slug: string;
-  post:{
+  post: {
     title: string;
     slug: string;
-  }[]
+    date: string;
+    author: {
+      name: string;
+      slug: string;
+    };
+  }[];
 }
 
 const { tag } = Astro.params;
@@ -22,9 +43,14 @@ const query = {
         tags {
           name
           slug
-          post{
+          post {
             title
             slug
+            date
+            author {
+              name
+              slug
+            }
           }
         }
       }
@@ -38,12 +64,35 @@ const op: Tag | undefined = json?.data?.tags?.find((p: Tag) => p.slug === tag);
 ---
 
 <MainLayout>
-  <div class="w-full lg:max-w-4xl mx-auto">
-    <div class="p-5 grid sm:grid-cols-2 gap-5">
-      {op?.post.map(({title, slug}) => (
-          <a href={`/blogs/${slug}`} class="p-5 border rounded-[20px]">
-              <h2>{title}</h2>
-          </a>
+  <div class="w-full lg:max-w-5xl mx-auto py-10 px-4">
+    <h1 class="text-4xl font-bold text-center mb-10 text-white">
+      <span class="text-orange-500">#{op?.name}</span>
+    </h1>
+    <div class="grid sm:grid-cols-2 gap-6">
+      {op?.post.map(({ title, slug, author, date }) => (
+        <div
+          class="p-5 flex flex-col justify-between space-y-5 rounded-[20px] border relative overflow-hidden hover:brightness-110 z-20"
+          style="background: radial-gradient(circle at top left, #1a1a1a, #0d0d0d); border-color: #2c2c2c; height: 100%;"
+        >
+          <div class="flex flex-col flex-grow">
+            <a
+              href={`/blogs/${slug}`}
+              class="z-10 relative text-white leading-snug transition-colors"
+            >
+              {title}
+            </a>
+          </div>
+          <div class="text-sm text-gray-400">
+            <a
+              href={`/blogs/author/${author.slug}`}
+              class="text-orange-400 hover:text-orange-300 transition-colors"
+            >
+              {author.name}
+            </a>
+            <span class="mx-2">•</span>
+            <span>{formatDate(date)}</span>
+          </div>
+        </div>
       ))}
     </div>
   </div>

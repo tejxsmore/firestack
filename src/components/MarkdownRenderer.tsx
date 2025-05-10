@@ -24,7 +24,7 @@ const parseMarkdown = (markdown: string): string => {
   html = processCodeBlocks(html);
   
   html = html.replace(/`([^`]+)`/g,
-    '<code class="bg-[#212121] px-1.5 py-0.5 rounded font-mono text-sm text-white">$1</code>');
+    '<code class="bg-[#191919] px-1.5 py-0.5 rounded font-mono text-sm text-white">$1</code>');
 
   html = html.replace(/^###### (.*$)/gm, '<h6 class="text-sm font-semibold mt-6 mb-2">$1</h6>');
   html = html.replace(/^##### (.*$)/gm, '<h5 class="text-base font-semibold mt-6 mb-2">$1</h5>');
@@ -39,24 +39,16 @@ const parseMarkdown = (markdown: string): string => {
   html = html.replace(/_(.*?)_/g, '<em>$1</em>');
 
   html = html.replace(/^> (.*$)/gm,
-    '<blockquote class="border-l-4 border-[#3D3D3D] pl-4 py-1 italic bg-[#3D3D3D] my-4">$1</blockquote>');
-
+    '<blockquote class="border-l-4 border-[#3D3D3D] pl-4 py-2.5 italic bg-[#191919] my-4">$1</blockquote>');
   html = html.replace(/^\-\-\-$/gm, '<hr class="border-t my-8 border-[#212121]">');
-
   html = processLists(html);
-
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
     '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline">$1</a>');
-
   html = html.replace(/!\[([^\]]+)\]\(([^)]+)\)/g,
     '<img src="$2" alt="$1" class="max-w-full h-auto rounded-lg my-4">');
-
   html = processTables(html);
-  
   html = html.replace(/^(?!<[a-z\/].*>)(.+)$/gm, '<p class="my-4">$1</p>');
-  
   html = html.replace(/<p class="my-4"><\/p>/g, '');
-  
   html = html.replace(/<\/p>\s*<p/g, '</p>\n<p');
 
   return html;
@@ -67,7 +59,7 @@ const processCodeBlocks = (html: string): string => {
     const languageClass = language ? ` language-${language}` : '';
     const formattedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
-    return `<pre class="bg-[#212121] p-4 rounded-lg my-6 overflow-x-auto"><code class="block whitespace-pre text-white${languageClass}">${formattedCode}</code></pre>`;
+    return `<pre class="bg-[#191919] p-4 rounded-lg my-6 overflow-x-auto"><code class="block whitespace-pre text-white${languageClass}">${formattedCode}</code></pre>`;
   });
 };
 
@@ -137,16 +129,16 @@ const processTables = (html: string): string => {
     
     if (isTableRow) {
       if (!inTable) {
-        result.push('<div class="overflow-x-auto my-5"><table class="w-full border-collapse">');
+        result.push('<div class="overflow-x-auto my-5 bg-[#191919]"><table class="w-full border-collapse">');
         
         const nextLine = i + 1 < lines.length ? lines[i + 1] : '';
         const isHeaderRow = nextLine.includes('|-') || nextLine.includes('| -');
         
         if (isHeaderRow) {
-          result.push('<thead class="bg-[#212121] text-white">');
+          result.push('<thead class="bg-[#191919] text-white">');
           inTable = true;
         } else {
-          result.push('<tbody>');
+          result.push('<tbody class="bg-transparent">');
           inTable = true;
         }
       }
@@ -164,7 +156,7 @@ const processTables = (html: string): string => {
         .map(cell => cell.trim());
       
       const cellTag = isHeaderRow ? 'th' : 'td';
-      const cellClass = 'border border-gray-700 px-4 py-2';
+      const cellClass = 'border border-gray-700 px-6 py-2';
       
       result.push('<tr>');
       cells.forEach(cell => {

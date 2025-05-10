@@ -7,16 +7,16 @@ const { blog } = Astro.params
 interface Post {
   title: string;
   slug: string;
-  author:{
+  author: {
     name: string;
     slug: string;
-  }
-  date:string
-  tag:{
-    name:string
-    slug:string
-  }[]
-  content: string
+  };
+  date: string;
+  tag: {
+    name: string;
+    slug: string;
+  }[];
+  content: string;
 }
 
 const query = {
@@ -46,24 +46,55 @@ const query = {
 const response = await fetch(import.meta.env.HYGRAPH_API, query);
 const json = await response.json();
 const post: Post | null = json.data.posts.find((p: Post) => p.slug === blog)
+
+function formatDate(isoDate : string) {
+    if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+        throw new Error('Invalid date format. Please use YYYY-MM-DD');
+    }
+    const [year, month, day] = isoDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    if (isNaN(date.getTime())) {
+        throw new Error('Invalid date');
+    }
+    const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    return `${day} ${months[month - 1]}, ${year}`;
+}
 ---
 
 <BlogLayout>
-  <div class="p-5 space-y-5">
-    <h1>{post?.title}</h1>
-    <a href={`/blogs/author/${post?.author.slug}`}>{post?.author.name}</a>
-    <p>{post?.date}</p>
-    <div class="flex flex-wrap">
+  <div class="w-full lg:max-w-4xl mx-auto py-10 px-5 space-y-5">
+    <h1 class="text-4xl font-bold text-center pb-10">{post?.title}</h1>
+    <div class="text-gray-400 text-center pb-5">
+      <a 
+        href={`/blogs/author/${post?.author.slug}`} 
+        class="text-lg font-normal text-orange-500 hover:text-orange-300 transition-colors">
+          {post?.author.name}
+      </a>
+
+      <span class="mx-2">•</span>
+      <span class="font-light">{formatDate(post?.date!)}</span>
+    </div>
+
+    <!-- Tag Section -->
+    <div class="flex flex-wrap gap-5 justify-center pb-10">
       {post?.tag.map(({ name, slug }) => (
-        <a 
-          href={`/tags/${slug}`} 
-          class=""
+        <a
+          href={`/tags/${slug}`}
+          class="inline-block px-6 py-3 text-sm rounded-[16px] bg-[#14100f] 
+          text-orange-400 border border-[#3a2a1e] hover:bg-[#1e1917] hover:border-[#5a3a1e] 
+          transition-colors"
         >
-          {name}
+          #{name}
         </a>
       ))}
     </div>
-    <div class="w-full md:max-w-3xl">
+
+    <!-- Blog Content Section -->
+    <div class="w-full md:max-w-3xl mt-6 text-gray-300">
       <MarkdownRenderer content={post?.content!} />
     </div>
   </div>

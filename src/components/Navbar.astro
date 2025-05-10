@@ -1,17 +1,48 @@
 ---
-import { SignedIn, SignedOut, SignInButton, SignOutButton } from '@clerk/astro/components'
+import { SignedIn, SignedOut, SignInButton, SignOutButton } from '@clerk/astro/components';
 ---
-<div class="p-5 flex justify-between items-center">
-    <div class="flex items-end gap-10">
-      <a href="/" class="text-4xl font-bold">Firestack</a>
-      <a href="/blogs" class="text-lg font-normal">Blogs</a>
-    </div>
-    <div>
-        <SignedOut>
-            <SignInButton mode="modal" />
-        </SignedOut>
-        <SignedIn>
-            <SignOutButton />
-        </SignedIn>
-    </div>
+
+<div class="p-5 flex justify-between items-center relative">
+
+  <div class="flex items-end gap-10 z-10">
+    <a href="/" class="text-4xl font-bold mb-1">
+      🔥Stack
+    </a>
+    <a href="/blogs" class="text-lg font-normal hidden md:block mb-0.5">
+      Blogs
+    </a>
   </div>
+
+  <div class="flex gap-4 z-10">
+    <SignedOut>
+      <SignInButton mode="modal">
+        <div class="px-6 py-3 rounded-[16px] text-white bg-[#14100f] border border-[#3a2a1e] 
+        hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors text-base font-medium 
+        cursor-pointer">
+          Sign In
+        </div>
+      </SignInButton>
+    </SignedOut>
+
+    <SignedIn>
+      <SignOutButton>
+        <div class="px-6 py-3 rounded-[16px] text-white bg-[#14100f] border border-[#3a2a1e] 
+        hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors text-base font-medium 
+        cursor-pointer">
+          Sign Out
+        </div>
+      </SignOutButton>
+    </SignedIn>
+  </div>
+</div>
+
+<style>
+  @keyframes fire-flicker {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.25); }
+  }
+
+  .animate-fire {
+    animation: fire-flicker 1.4s infinite;
+  }
+</style>
