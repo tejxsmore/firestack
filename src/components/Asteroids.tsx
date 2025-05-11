@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useAsteroidStore } from "../lib/AsteroidStore"
+import { useAsteroidStore } from "../store/asteroidStore"
 
 interface Asteroid {
   x: number

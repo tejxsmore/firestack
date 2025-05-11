@@ -79,7 +79,7 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
       <Asteroids />
       <div className="md:max-w-2xl mx-auto my-10 mb-30 space-y-10">
         <div className="text-center">
-          <h1 className="text-3xl lg:text-5xl font-bold leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight">
             Cut through the noise,
             <br />
             <span className="bg-gradient-to-r from-amber-500 via-orange-600 

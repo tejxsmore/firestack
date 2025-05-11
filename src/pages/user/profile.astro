@@ -1,13 +1,23 @@
 ---
+// Imports
 import MainLayout from "../../layouts/MainLayout.astro"
-const user = await Astro.locals.currentUser();
-const userEmail = user?.emailAddresses[0].emailAddress;
+import { getSupabase } from "../../lib/supabase"
+const supabase = getSupabase()
+
+const user = await Astro.locals.currentUser()
+const userid = user?.id
+const userFullname = user?.fullName
+const userEmail = user?.emailAddresses[0].emailAddress
 
 interface Author {
   name: string;
-  slug: string;
+  title: string;
   email: string;
-  bio: string;
+  bio: string
+  post:{
+    title: string;
+    slug: string;
+  }[]
 }
 
 const query = {
@@ -18,9 +28,13 @@ const query = {
       {
         authors {
           name
-          slug
+          title
           email
           bio
+          post{
+            title
+            slug
+          }
         }
       }
     `,
@@ -28,14 +42,81 @@ const query = {
 };
 
 const response = await fetch(import.meta.env.HYGRAPH_API, query);
-const data = await response.json();
-const author: Author | undefined = data?.data?.authors?.find(
-  (a: Author) => a.email === userEmail
-);
----
+const json = await response.json();
+const author: Author | undefined = json?.data?.authors?.find(
+  (a: Author) => a.email === userEmail);
 
-<MainLayout title="Profile">
-    <div class="p-5">
-        <h1>{userEmail}</h1>
-    </div>
+const { data: liked } = await supabase
+  .from('liked')
+  .select('*')
+  .eq('userid', userid!)
+  .order('liked_at', { ascending: false })
+
+const { data: saved } = await supabase
+  .from('saved')
+  .select('*')
+  .eq('userid', userid!)
+  .order('saved_at', { ascending: false })
+---
+<MainLayout>
+  <div class="p-6 space-y-5 text-white">
+    {author && (
+      <div class="space-y-2">
+        <h1 class="text-4xl font-bold">{author.name}</h1>
+        <h2 class="text-lg font-semibold text-gray-400">{author.title}</h2>
+        <p class="text-sm text-gray-500">{author.bio}</p>
+
+        <section class="space-y-4 pt-5">
+        <h3 class="text-2xl font-semibold">Posts created</h3>
+        <div class="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
+          {author.post.map(({ title, slug }) => (
+            <a
+              href={`/blogs/${slug}`}
+              class="min-w-[260px] max-w-32 sm:max-w-xs p-5 rounded-[20px] border border-[#2c2c2c] flex-shrink-0
+              bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] hover:brightness-110 transition"
+            >
+              <h4 class="text-white">{title}</h4>
+            </a>
+          ))}
+        </div>
+
+      </section>
+      </div>
+    )}
+
+    {saved && saved.length > 0 && (
+      <section class="space-y-4">
+        <h3 class="text-2xl font-semibold">Saved</h3>
+        <div class="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
+          {saved.map(({ title, slug }) => (
+            <a
+              href={`/blogs/${slug}`}
+              class="min-w-[260px] max-w-32 sm:max-w-xs p-5 rounded-[20px] border border-[#2c2c2c] flex-shrink-0
+              bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] hover:brightness-110 transition"
+            >
+              <h4 class="text-white">{title}</h4>
+            </a>
+          ))}
+        </div>
+
+      </section>
+    )}
+
+    {liked && liked.length > 0 && (
+      <section class="space-y-4">
+        <h3 class="text-2xl font-semibold">Liked</h3>
+        <div class="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
+          {liked.map(({ title, slug }) => (
+            <a
+              href={`/blogs/${slug}`}
+              class="min-w-[260px] max-w-32 sm:max-w-xs p-5 rounded-[20px] border border-[#2c2c2c] flex-shrink-0
+              bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] hover:brightness-110 transition"
+            >
+              <h4 class="text-white">{title}</h4>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
 </MainLayout>
