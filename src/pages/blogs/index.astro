@@ -51,10 +51,10 @@ const posts: Post[] = json.data.posts ?? [];
             {title}
           </a>
 
-          <div class="flex flex-wrap gap-5 z-10 relative mt-auto">
+          <div class="flex flex-wrap gap-3 z-10 relative mt-auto">
             {tag.map(({ name, slug }) => (
               <a
-                href={`/tags/${slug}`}
+                href={`/blogs/tag/${slug}`}
                 class="z-10 relative inline-block px-6 py-3 text-sm text-center 
                 rounded-[16px] bg-[#14100f] text-white border border-[#3a2a1e] 
                 hover:bg-[#1e1917] hover:border-[#5a3a1e] transition-colors"

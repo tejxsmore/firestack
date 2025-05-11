@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import SearchBar from "./SearchBar";
-import LavaRocks from "./LavaRocks";
+import Asteroids from "./Asteroids";
 
 interface Tool {
   name: string;
@@ -76,16 +76,17 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
 
   return (
     <div className="p-5 space-y-5">
-      <LavaRocks />
+      <Asteroids />
       <div className="md:max-w-2xl mx-auto my-10 mb-30 space-y-10">
         <div className="text-center">
-          <h1 className="text-5xl font-bold leading-tight">
-            Cut Through the Noise,
+          <h1 className="text-3xl lg:text-5xl font-bold leading-tight">
+            Cut through the noise,
             <br />
-            <span className="bg-gradient-to-r from-amber-500 via-orange-600 to-red-700 text-transparent bg-clip-text">
-              Find Tools
+            <span className="bg-gradient-to-r from-amber-500 via-orange-600 
+            to-red-700 text-transparent bg-clip-text">
+              Find tools
             </span>
-            <span> That Work</span>
+            <span> that work</span>
           </h1>
         </div>
         <div className="flex items-center gap-5">
@@ -121,10 +122,10 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
                 <button
                   key={slug}
                   onClick={() => toggleCategory(slug)}
-                  className={`px-6 py-3 rounded-[16px] border text-sm cursor-pointer ${
+                  className={`px-6 py-3 rounded-[16px] border text-sm cursor-pointer rounded-[16px] ${
                     selected.includes(slug)
                       ? "bg-[#2a1e17] border-[#ff6a00] text-white font-semibold"
-                      : "rounded-[16px] bg-[#14100f] text-white border border-[#3a2a1e] hover:bg-[#1e1917] hover:border-[#5a3a1e]"
+                      : "bg-[#14100f] text-white border border-[#3a2a1e] hover:bg-[#1e1917] hover:border-[#5a3a1e]"
                   }`}
                 >
                   {name}

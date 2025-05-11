@@ -1,0 +1,21 @@
+---
+import Asteroids from "../components/Asteroids";
+import NoLayout from "../layouts/NoLayout.astro";
+---
+
+<NoLayout title="Page not found">
+  <Asteroids client:load />
+  <div class="flex justify-center text-center items-center min-h-screen bg-[#0e0b09] px-4">
+    <div class="relative w-full max-w-md p-6 space-y-5 rounded-[20px] 
+    bg-[#0e0e0e] border border-[#2c2c2c]">
+      <h1 class="text-4xl font-bold mb-6 text-white">404 - Page Not Found</h1>
+      <p class="text-white mb-8 text-sm opacity-70">Sorry, we couldn’t find that page.</p>
+      <a 
+        href="/" 
+        class="inline-block px-6 py-3 border border-[#3a2a1e] bg-[#1b1613] text-white rounded-[16px] font-medium hover:bg-[#1f1a17] hover:border-[#4a3a2e] transition-colors"
+      >
+        Go to Homepage
+      </a>
+    </div>
+  </div>
+</NoLayout>

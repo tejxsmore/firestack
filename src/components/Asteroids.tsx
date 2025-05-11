@@ -28,7 +28,7 @@ interface Particle {
   type: "ember" | "smoke" | "spark"
 }
 
-export default function LavaRocks() {
+export default function Asteroids() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const asteroids = useRef<Asteroid[]>([])
   const animationFrameId = useRef<number>(0)

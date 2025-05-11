@@ -1,0 +1,41 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro"
+const user = await Astro.locals.currentUser();
+const userEmail = user?.emailAddresses[0].emailAddress;
+
+interface Author {
+  name: string;
+  slug: string;
+  email: string;
+  bio: string;
+}
+
+const query = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    query: `
+      {
+        authors {
+          name
+          slug
+          email
+          bio
+        }
+      }
+    `,
+  }),
+};
+
+const response = await fetch(import.meta.env.HYGRAPH_API, query);
+const data = await response.json();
+const author: Author | undefined = data?.data?.authors?.find(
+  (a: Author) => a.email === userEmail
+);
+---
+
+<MainLayout title="Profile">
+    <div class="p-5">
+        <h1>{userEmail}</h1>
+    </div>
+</MainLayout>

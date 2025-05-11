@@ -1,40 +1,119 @@
 ---
 import { SignedIn, SignedOut, SignInButton, SignOutButton } from '@clerk/astro/components';
+import { Pen, UserRound } from 'lucide-react';
 ---
 
 <div class="p-5 flex justify-between items-center relative">
-
+  <!-- Logo & Navigation -->
   <div class="flex items-end gap-10 z-10">
-    <a href="/" class="text-4xl font-bold mb-1">
-      🔥Stack
+    <a href="/" class="text-4xl font-bold mb-0.5">
+      <span class="text-3xl animate-fire">🔥</span>
+      Stack
     </a>
-    <a href="/blogs" class="text-lg font-normal hidden md:block mb-0.5">
+    <a href="/blogs" class="text-lg font-normal hidden md:block">
       Blogs
     </a>
   </div>
 
-  <div class="flex gap-4 z-10">
+  <!-- Right Actions -->
+  <div class="flex gap-4 z-10 items-center">
+
+    <!-- Pen Icon with Tooltip -->
+    <div class="relative group">
+      <a href={`/user/write-a-blog`}>
+        <div class="p-3 rounded-[16px] text-white bg-[#14100f] border border-[#3a2a1e] 
+          hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors cursor-pointer">
+          <Pen />
+        </div>
+      </a>
+      <div 
+        class="absolute top-full mt-3 left-1/2 transform -translate-x-1/2 px-3 py-1.5 text-sm text-white 
+        bg-[#14100f] border border-[#3a2a1e] rounded-[12px] opacity-0 group-hover:opacity-100 
+        transition-opacity duration-300 pointer-events-none whitespace-nowrap z-20 shadow-lg"
+      >
+        Write a blog
+      </div>
+    </div>
+
+    <!-- Signed Out -->
     <SignedOut>
       <SignInButton mode="modal">
         <div class="px-6 py-3 rounded-[16px] text-white bg-[#14100f] border border-[#3a2a1e] 
-        hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors text-base font-medium 
-        cursor-pointer">
+          hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors text-base font-medium 
+          cursor-pointer focus:outline-none">
           Sign In
         </div>
       </SignInButton>
     </SignedOut>
 
+    <!-- Signed In -->
     <SignedIn>
-      <SignOutButton>
-        <div class="px-6 py-3 rounded-[16px] text-white bg-[#14100f] border border-[#3a2a1e] 
-        hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors text-base font-medium 
-        cursor-pointer">
-          Sign Out
+      <div class="relative">
+        <button 
+          id="user-menu-toggle"
+          class="p-3 rounded-[16px] text-white bg-[#14100f] border border-[#3a2a1e] 
+          hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors cursor-pointer focus:outline-none"
+          aria-expanded="false"
+          aria-controls="user-menu"
+        >
+          <UserRound />
+        </button>
+
+        <div 
+          id="user-menu"
+          class="p-1 absolute right-0 mt-3 w-48 bg-[#14100f] border border-[#3a2a1e] rounded-[16px] 
+          shadow-lg z-30 overflow-hidden text-sm hidden"
+        >
+          <a href={`/user/profile`} class="block px-6 py-3 text-white hover:bg-[#1b1613] 
+            transition-colors rounded-[16px] text-center mb-1">
+            Profile
+          </a>
+          <a href="/setting" class="block px-6 py-3 text-white hover:bg-[#1b1613] 
+            transition-colors rounded-[16px] text-center mb-1">
+            Setting
+          </a>
+          <SignOutButton asChild>
+            <div class="w-full text-center px-6 py-3 text-white bg-[#8E1616] border border-red-900 
+              hover:bg-red-950 transition-colors cursor-pointer rounded-[16px] focus:outline-none">
+              Sign out
+            </div>
+          </SignOutButton>          
         </div>
-      </SignOutButton>
+      </div>
     </SignedIn>
   </div>
 </div>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('user-menu-toggle');
+    const dropdown = document.getElementById('user-menu');
+
+    function toggleDropdown() {
+      dropdown.classList.toggle('hidden');
+      toggleBtn.setAttribute('aria-expanded', dropdown.classList.contains('hidden') ? 'false' : 'true');
+    }
+
+    function closeDropdown() {
+      dropdown.classList.add('hidden');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (toggleBtn.contains(e.target)) {
+        toggleDropdown();
+      } else if (!dropdown.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+  });
+</script>
 
 <style>
   @keyframes fire-flicker {

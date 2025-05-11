@@ -1,0 +1,145 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import RegisterAuthor from "../../components/RegisterAuthor.astro";
+
+const user = await Astro.locals.currentUser();
+const userEmail = user?.emailAddresses[0]?.emailAddress;
+
+interface Author {
+  name: string;
+  slug: string;
+  email: string;
+  bio: string;
+}
+
+interface Tag {
+  name: string;
+  slug: string;
+}
+
+const query = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    query: `
+      {
+        authors {
+          name
+          slug
+          email
+          bio
+        }
+        tags {
+          name
+          slug
+        }
+      }
+    `,
+  }),
+};
+
+const response = await fetch(import.meta.env.HYGRAPH_API, query);
+const json = await response.json();
+const author: Author | undefined = json?.data?.authors?.find(
+  (a: Author) => a.email === userEmail
+);
+const tags: Tag[] = json?.data?.tags || [];
+---
+
+<MainLayout title="Write a blog">
+  <div class="p-5">
+    {author ? (
+      <div class="flex items-center justify-center">
+        <div class="p-5 space-y-6 border border-[#3a2a1e] rounded-[20px] bg-[#14100f] shadow-lg w-full md:max-w-xl">
+          <form method="POST" action="/api/write-a-blog" class="space-y-4">
+            <input type="hidden" name="email" value={userEmail} />
+            <input type="hidden" name="name" value={author.name} />
+            <input type="hidden" name="slug" value={author.slug} />
+            
+            <div>
+              <label class="block mb-3 text-sm">Title</label>
+              <input
+                required
+                name="title"
+                type="text"
+                class="w-full bg-[#1b1613] border border-[#3a2a1e] px-4 py-3 rounded-[16px] text-white focus:outline-none focus:border-[#ff6a00]"
+                placeholder="Astro JS in 2025"
+              />
+            </div>
+            
+            <div>
+              <label class="block mb-3 text-sm">Tags</label>
+              <div class="flex flex-wrap gap-3">
+                {tags.map(({name, slug}) => (
+                  <div 
+                    class="tag-option inline-block px-6 py-3 text-sm rounded-[16px] bg-[#14100f] 
+                    text-orange-400 border border-[#3a2a1e] hover:bg-[#1e1917]
+                    hover:border-[#5a3a1e] transition-colors cursor-pointer"
+                    data-slug={slug}
+                  >
+                    #{name}
+                    <input type="checkbox" name="tags" value={slug} class="hidden" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label class="block mb-3 text-sm">Content (Markdown)</label>
+              <textarea
+                required
+                name="content"
+                rows="10"
+                class="w-full bg-[#1b1613] border border-[#3a2a1e] px-4 py-3 rounded-[16px] text-white resize-none focus:outline-none focus:border-[#ff6a00]"
+                placeholder="Your blog content here..."
+              ></textarea>
+            </div>
+            
+            <button
+              type="submit"
+              class="w-full px-6 py-3 rounded-[16px] bg-[#14100f] text-white border border-[#3a2a1e] hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors font-medium cursor-pointer"
+            >
+              Submit Blog Post
+            </button>
+          </form>
+        </div>
+      </div>
+    ) : (
+      <RegisterAuthor />
+    )}
+  </div>
+</MainLayout>
+
+<script>
+  // Handle tag selection
+  document.addEventListener('DOMContentLoaded', () => {
+    const tagOptions = document.querySelectorAll('.tag-option');
+    const form = document.querySelector('form');
+    
+    // Initialize selected tags array
+    let selectedTags = [];
+    
+    tagOptions.forEach(tag => {
+      tag.addEventListener('click', () => {
+        // Toggle selected state
+        const checkbox = tag.querySelector('input[type="checkbox"]') as HTMLInputElement;
+        checkbox.checked = !checkbox.checked;
+        
+        // Update styling based on selection state
+        if (checkbox.checked) {
+          tag.classList.remove('bg-[#14100f]', 'border-[#3a2a1e]');
+          tag.classList.add('bg-[#2a1e17]', 'border-[#ff6a00]');
+        } else {
+          tag.classList.remove('bg-[#2a1e17]', 'border-[#ff6a00]');
+          tag.classList.add('bg-[#14100f]', 'border-[#3a2a1e]');
+        }
+      });
+    });
+    
+    // Ensure form submits even if no tags are selected
+    form?.addEventListener('submit', (e) => {
+      // Form will naturally include all checked boxes in the submission
+      console.log('Submitting form with selected tags');
+    });
+  });
+</script>
