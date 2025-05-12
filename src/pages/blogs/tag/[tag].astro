@@ -71,7 +71,7 @@ const op: Tag | undefined = json?.data?.tags?.find((p: Tag) => p.slug === tag);
     <div class="grid sm:grid-cols-2 gap-6">
       {op?.post.map(({ title, slug, author, date }) => (
         <div
-          class="p-5 flex flex-col justify-between space-y-5 rounded-[20px] border relative overflow-hidden hover:brightness-110 z-20"
+          class="p-5 flex flex-col justify-between space-y-5 rounded-[20px] border relative overflow-hidden hover:brightness-110"
           style="background: radial-gradient(circle at top left, #1a1a1a, #0d0d0d); border-color: #2c2c2c; height: 100%;"
         >
           <div class="flex flex-col flex-grow">

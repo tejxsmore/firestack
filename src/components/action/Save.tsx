@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSaveStore } from "../store/saveStore"
+import { useSaveStore } from "../../store/saveStore"
 
 interface SaveProps {
   slug: string;

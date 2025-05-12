@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLikeStore } from "../store/likeStore"
+import { useLikeStore } from "../../store/likeStore"
 
 interface LikeProps {
   slug: string;

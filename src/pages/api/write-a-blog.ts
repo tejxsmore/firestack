@@ -122,5 +122,5 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     }),
   });
 
-  return redirect('/');
+  return redirect(`/blogs/${slug}`);
 };

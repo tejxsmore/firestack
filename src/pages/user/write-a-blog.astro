@@ -1,6 +1,5 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
-import RegisterAuthor from "../../components/RegisterAuthor.astro";
 
 const user = await Astro.locals.currentUser();
 const userEmail = user?.emailAddresses[0]?.emailAddress;
@@ -44,6 +43,7 @@ const author: Author | undefined = json?.data?.authors?.find(
   (a: Author) => a.email === userEmail
 );
 const tags: Tag[] = json?.data?.tags || [];
+const userSlug = userEmail ? userEmail.split("@")[0]?.toLowerCase().replace(/[^a-z0-9]/g, "-") : "";
 ---
 
 <MainLayout title="Write a blog">
@@ -105,7 +105,76 @@ const tags: Tag[] = json?.data?.tags || [];
         </div>
       </div>
     ) : (
-      <RegisterAuthor />
+    <div class="text-center space-y-6 relative">
+  <button
+    id="open-form"
+    class="px-6 py-3 rounded-[16px] bg-[#14100f] text-white border 
+      border-[#3a2a1e] hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors 
+      font-medium cursor-pointer focus:outline-none"
+  >
+    Register as Author ✍️
+  </button>
+
+  <div
+    id="form-wrapper"
+    class="pb-5 hidden absolute inset-0 flex items-start justify-center mt-16"
+  >
+    <div id="form-overlay" class="fixed inset-0 bg-black/40"></div>
+
+    <div class="relative z-30 w-full md:max-w-xl">
+      <div
+        class="space-y-6 border border-[#3a2a1e] rounded-[20px] p-5 bg-[#14100f] shadow-lg"
+      >
+        <form method="POST" action="/api/register-author" class="space-y-4 text-start">
+          <input type="hidden" name="email" value={userEmail} />
+          <input type="hidden" name="slug" value={userSlug} />
+
+          <div>
+            <label class="block mb-3 text-sm">Full Name</label>
+            <input
+              required
+              name="name"
+              type="text"
+              class="w-full bg-[#1b1613] border border-[#3a2a1e] px-4 py-3 rounded-[16px] text-white focus:outline-none focus:border-[#ff6a00]"
+              placeholder="Jane Doe"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-3 text-sm">Title</label>
+            <input
+              required
+              name="title"
+              type="text"
+              class="w-full bg-[#1b1613] border border-[#3a2a1e] px-4 py-3 rounded-[16px] text-white focus:outline-none focus:border-[#ff6a00]"
+              placeholder="e.g. AI Researcher"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-3 text-sm">Short Bio</label>
+            <textarea
+              required
+              name="bio"
+              rows="4"
+              class="w-full bg-[#1b1613] border border-[#3a2a1e] px-4 py-3 rounded-[16px] text-white resize-none focus:outline-none focus:border-[#ff6a00]"
+              placeholder="Tell us a bit about yourself..."
+            ></textarea>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full px-6 py-3 rounded-[16px] bg-[#14100f] text-white border 
+              border-[#3a2a1e] hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors 
+              font-normal cursor-pointer"
+          >
+            Register
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
     )}
   </div>
 </MainLayout>
@@ -140,6 +209,28 @@ const tags: Tag[] = json?.data?.tags || [];
     form?.addEventListener('submit', (e) => {
       // Form will naturally include all checked boxes in the submission
       console.log('Submitting form with selected tags');
+    });
+  });
+</script>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const openBtn = document.getElementById('open-form');
+    const formWrapper = document.getElementById('form-wrapper');
+    const overlay = document.getElementById('form-overlay');
+
+    function closeForm() {
+      formWrapper?.classList.add('hidden');
+    }
+
+    openBtn?.addEventListener('click', () => {
+      formWrapper?.classList.remove('hidden');
+    });
+
+    overlay?.addEventListener('click', closeForm);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeForm();
     });
   });
 </script>
