@@ -95,7 +95,7 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
             onClick={() => setIsOpen(true)}
             className="px-6 py-3 rounded-[16px] text-white bg-[#14100f] border 
             border-[#3a2a1e] hover:bg-[#1b1613] hover:border-[#4a3a2e] transition-colors 
-            text-base font-medium z-20 cursor-pointer"
+            text-base font-medium z-20 cursor-pointer focus:outline-none"
           >
             Filters
           </button>
@@ -103,18 +103,19 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center backdrop-blur-sm h-full">
+        <div className="p-5 fixed inset-0 z-40 flex items-center justify-center backdrop-blur-sm h-full">
           <div
             ref={modalRef}
-            className="relative w-full max-w-md p-6 space-y-5 rounded-[20px] bg-[#0e0e0e] border border-[#2c2c2c]"
+            className="relative w-full max-w-md p-5 space-y-5 rounded-[20px] bg-[#0e0e0e] border border-[#2c2c2c]"
           >
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-white">Categories</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-white hover:text-red-400 transition-colors cursor-pointer"
+                className="p-2 text-white bg-[#14100f] border border-[#3a2a1e] 
+                hover:text-orange-400 rounded-[8px] cursor-pointer"
               >
-                <X />
+                <X size={16} strokeWidth={1.5} />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-5">
@@ -148,7 +149,7 @@ export default function ToolFilter({ tools = [], categories = [] }: Props) {
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {filteredTools.map(({ name, slug, logo, description, websiteUrl }) => (
           <div
             key={slug}

@@ -1,5 +1,5 @@
 ---
-import BlogLayout from "../../layouts/BlogLayout.astro";
+import MainLayout from "../../layouts/MainLayout.astro";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import Save from "../../components/action/Save";
 import Like from "../../components/action/Like";
@@ -64,7 +64,7 @@ function formatDate(isoDate: string) {
 }
 ---
 
-<BlogLayout>
+<MainLayout>
   <div class="w-full lg:max-w-4xl mx-auto py-10 pb-5 px-5 space-y-5">
     <h1 class="text-3xl sm:text-5xl font-extrabold text-center pb-10">{post?.title}</h1>
     <div class="text-gray-400 text-center">
@@ -80,7 +80,6 @@ function formatDate(isoDate: string) {
 
     <!-- Tag Section -->
     <div class="flex flex-wrap gap-3 justify-center pb-10">
-      <span><Save client:load slug={post?.slug!} title={post?.title!} /></span>
       {post?.tag.map(({ name, slug }) => (
         <a
           href={`/blogs/tag/${slug}`}
@@ -93,12 +92,13 @@ function formatDate(isoDate: string) {
       ))}
     </div>
 
+    <div class="w-full flex justify-between items-center">
+        <Like client:load slug={post?.slug!} title={post?.title!} />
+        <Save client:load slug={post?.slug!} title={post?.title!} />
+    </div>
+
     <div class="w-full md:max-w-4xl mt-10 text-gray-300">
       <MarkdownRenderer content={post?.content!} />
     </div>
-
-    <div class="mt-5">
-      <span><Like client:load slug={post?.slug!} title={post?.title!} /></span>
-    </div>
   </div>
-</BlogLayout>
+</MainLayout>

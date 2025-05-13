@@ -1,4 +1,3 @@
-// src/pages/api/bookmark.ts
 import type { APIRoute } from "astro";
 import { getSupabase } from "../../lib/supabase";
 
