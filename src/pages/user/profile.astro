@@ -7,11 +7,13 @@ const supabase = getSupabase()
 const user = await Astro.locals.currentUser()
 const userid = user?.id
 const userFullname = user?.fullName
-const userEmail = user?.emailAddresses[0].emailAddress
+const userEmail = user?.emailAddresses?.[0]?.emailAddress;
 
-import { Trash, X } from "lucide-react"
+import { Edit, Trash, X } from "lucide-react"
+import toast from "react-hot-toast"
 
 interface Author {
+  id: string
   name: string;
   title: string;
   email: string;
@@ -19,6 +21,11 @@ interface Author {
   post: {
     title: string;
     slug: string;
+    tag:{
+      name: string;
+      slug: string;
+    }[]
+    content: string;
   }[]
 }
 
@@ -29,6 +36,7 @@ const query = {
     query: `
       {
         authors {
+          id
           name
           title
           email
@@ -36,6 +44,10 @@ const query = {
           post {
             title
             slug
+            tag{
+              name
+            }
+            content
           }
         }
       }
@@ -48,12 +60,7 @@ const json = await response.json();
 const author: Author | undefined = json?.data?.authors?.find(
   (a: Author) => a.email === userEmail
 );
-
-const { data: liked } = await supabase
-  .from('liked')
-  .select('*')
-  .eq('userid', userid!)
-  .order('liked_at', { ascending: false });
+const authorId = author?.id
 
 const { data: saved } = await supabase
   .from('saved')
@@ -64,7 +71,8 @@ const { data: saved } = await supabase
 
 
 <MainLayout>
-  <div class="p-6 space-y-5 text-white" data-env={import.meta.env.PUBLIC_HYGRAPH_API}>
+  <div class="p-6 space-y-5 text-white" data-env={import.meta.env.PUBLIC_HYGRAPH_API}
+  data-author-id={authorId}>
     {author && (
       <div class="space-y-2">
         <h1 class="text-4xl font-bold">{author.name}</h1>
@@ -74,7 +82,7 @@ const { data: saved } = await supabase
         <section class="space-y-5 mt-10">
           <h2 class="text-2xl font-semibold">Posts created</h2>
           <div class="divide-y divide-[#2c2c2c] border border-[#2c2c2c] rounded-[20px] overflow-hidden" id="posts-container">
-            {author.post.map(({ title, slug }, i) => (
+            {author.post.map(({ title, slug, tag, content }, i) => (
               <div
                 class="flex justify-between items-center gap-5 px-6 py-4 bg-[#0e0e0e] hover:bg-[#1a1a1a] transition post-item"
                 data-post-title={title}
@@ -85,6 +93,16 @@ const { data: saved } = await supabase
                   <span class="text-base line-clamp-2">{title}</span>
                 </a>
                 <div class="flex gap-3 flex-shrink-0">
+                  <button 
+                    class="p-2 text-white bg-[#14100f] border border-[#3a2a1e] focus:outline-none  
+                    cursor-pointer hover:text-blue-400 rounded-[10px] edit-post-btn" 
+                    aria-label="Edit"
+                    data-post-title={title}
+                    data-post-slug={slug}
+                    data-post-tags={tag.map(t => t.name).join(',')}
+                    data-post-content={content}>
+                      <Edit size={15} strokeWidth={1.5} />
+                  </button>
                   <button 
                     class="p-2 text-white bg-[#14100f] border border-[#3a2a1e] focus:outline-none  
                     cursor-pointer hover:text-orange-400 rounded-[10px] delete-post-btn" 
@@ -123,7 +141,7 @@ const { data: saved } = await supabase
   <!-- Confirm Delete Dialog -->
   <div id="confirm-delete-dialog" class="fixed inset-0 z-50 items-center justify-center hidden p-5">
     <div class="absolute inset-0 bg-black bg-opacity-50" id="dialog-overlay"></div>
-    <div class="relative z-10 bg-[#0e0e0e] border border-[#2c2c2c] rounded-[20px] p-5 max-w-md mx-auto mt-20">
+    <div class="relative z-10 bg-[#0e0e0e] border border-[#2c2c2c] rounded-[20px] p-5 max-w-md mx-auto">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-semibold text-white">Confirm Delete</h3>
         <button 
@@ -159,6 +177,79 @@ const { data: saved } = await supabase
       </div>
     </div>
   </div>
+
+  <!-- Edit Post Dialog -->
+  <div id="edit-post-dialog" class="fixed inset-0 z-50 items-center justify-center hidden p-5">
+    <div class="absolute inset-0 bg-black bg-opacity-50" id="edit-dialog-overlay"></div>
+    <div class="relative z-10 bg-[#0e0e0e] border border-[#2c2c2c] rounded-[20px] p-5 max-w-3xl mx-auto w-full">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-white">Edit Post</h3>
+        <button 
+          id="close-edit-dialog-btn"
+          class="p-2 text-white bg-[#14100f] border border-[#3a2a1e] hover:text-blue-400 
+          rounded-[8px] cursor-pointer" 
+          aria-label="Close edit dialog"
+        >
+          <X size={16} strokeWidth={1.5} />
+        </button>
+      </div>
+      
+      <form id="edit-post-form" class="space-y-6">
+        <input type="hidden" id="edit-post-slug">
+        
+        <div>
+          <label for="edit-post-title" class="block text-sm font-medium text-gray-300 mb-2">Title</label>
+          <input 
+            type="text" 
+            id="edit-post-title" 
+            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-lg 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+            placeholder="Post title"
+          >
+        </div>
+        
+        <div>
+          <label for="edit-post-tags" class="block text-sm font-medium text-gray-300 mb-2">Tags (comma-separated)</label>
+          <input 
+            type="text" 
+            id="edit-post-tags" 
+            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-lg 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+            placeholder="tag1, tag2, tag3"
+          >
+        </div>
+        
+        <div>
+          <label for="edit-post-content" class="block text-sm font-medium text-gray-300 mb-2">Content</label>
+          <textarea 
+            id="edit-post-content" 
+            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-lg 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white h-64"
+            placeholder="Post content"
+          ></textarea>
+        </div>
+        
+        <div class="flex justify-end gap-3">
+          <button 
+            type="button"
+            id="cancel-edit-btn"
+            class="px-6 py-3 text-white bg-[#14100f] border border-[#3a2a1e] 
+            hover:bg-[#1b1613] transition-colors rounded-[16px] cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            id="submit-edit-btn"
+            class="px-6 py-3 text-white bg-[#1a365d] border border-blue-900 
+            hover:bg-blue-900 transition-colors rounded-[16px] cursor-pointer"
+          >
+            Update Post
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </MainLayout>
 
 <style>
@@ -173,7 +264,10 @@ const { data: saved } = await supabase
 </style>
 
 <script>
+  import toast from "react-hot-toast";
+
   document.addEventListener('DOMContentLoaded', () => {
+    // Delete Post Functionality
     const deleteButtons = document.querySelectorAll('.delete-post-btn');
     const confirmDialog = document.getElementById('confirm-delete-dialog');
     const closeDialogBtn = document.getElementById('close-dialog-btn');
@@ -185,10 +279,23 @@ const { data: saved } = await supabase
     const savedItemsContainer = document.getElementById('saved-items-container');
     const savedContainer = document.getElementById('saved-container');
 
+    // Edit Post Functionality
+    const editButtons = document.querySelectorAll('.edit-post-btn');
+    const editDialog = document.getElementById('edit-post-dialog');
+    const closeEditDialogBtn = document.getElementById('close-edit-dialog-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    const editDialogOverlay = document.getElementById('edit-dialog-overlay');
+    const editPostForm = document.getElementById('edit-post-form') as HTMLFormElement;
+    const editPostSlugInput = document.getElementById('edit-post-slug') as HTMLInputElement;
+    const editPostTitleInput = document.getElementById('edit-post-title') as HTMLInputElement;
+    const editPostTagsInput = document.getElementById('edit-post-tags') as HTMLInputElement;
+    const editPostContentInput = document.getElementById('edit-post-content') as HTMLTextAreaElement;
+
     let currentPostTitle = '';
     let currentPostSlug = '';
     let currentPostElement: HTMLElement | null = null;
 
+    // Delete dialog functions
     function openDeleteDialog(title: any, slug: any, element: any) {
       currentPostTitle = title;
       currentPostSlug = slug;
@@ -209,6 +316,23 @@ const { data: saved } = await supabase
       currentPostElement = null;
     }
 
+    // Edit dialog functions
+    function openEditDialog(title: string, slug: string, tags: string = '', content: string = '') {
+      editPostSlugInput.value = slug;
+      editPostTitleInput.value = title;
+      editPostTagsInput.value = tags;
+      editPostContentInput.value = content;
+
+      editDialog?.classList.remove('hidden');
+      editDialog?.classList.add('flex');
+    }
+
+    function closeEditDialog() {
+      editDialog?.classList.add('hidden');
+      editDialog?.classList.remove('flex');
+    }
+
+    // Delete event listeners
     deleteButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault();
@@ -228,6 +352,133 @@ const { data: saved } = await supabase
     cancelDeleteBtn?.addEventListener('click', closeDeleteDialog);
     dialogOverlay?.addEventListener('click', closeDeleteDialog);
 
+    // Edit event listeners
+    editButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const title = button.getAttribute('data-post-title') || '';
+        const slug = button.getAttribute('data-post-slug') || '';
+        const tags = button.getAttribute('data-post-tags') || '';
+        const content = button.getAttribute('data-post-content') || '';
+
+        openEditDialog(title, slug, tags, content);
+      });
+    });
+
+    closeEditDialogBtn?.addEventListener('click', closeEditDialog);
+    cancelEditBtn?.addEventListener('click', closeEditDialog);
+    editDialogOverlay?.addEventListener('click', closeEditDialog);
+
+    function slugify(text: string): string {
+      return text
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w\-]+/g, "")
+        .replace(/\-\-+/g, "-");
+    }
+
+    // Submit edit form
+    editPostForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submit-edit-btn');
+      if (!submitBtn) return;
+      
+      const originalBtnText = submitBtn.textContent;
+      submitBtn.textContent = 'Updating...';
+      submitBtn.setAttribute('disabled', 'true');
+
+      const authorIdElement = document.querySelector('[data-author-id]');
+      const authorId = authorIdElement ? authorIdElement.getAttribute('data-author-id') : null;
+      
+      const newTitle = editPostTitleInput.value;
+      const newSlug = slugify(newTitle);
+
+      const updatedData = {
+        slug: editPostSlugInput.value,
+        title: editPostTitleInput.value,
+        tags: editPostTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag),
+        content: editPostContentInput.value,
+        authorId: authorId
+      };
+      
+      try {
+        const response = await fetch('/api/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData),
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          toast.error(err.message || 'Failed to update post');
+          return;
+        }
+
+        // Update the post in the UI
+        const postElement = document.querySelector(`.post-item[data-post-slug="${updatedData.slug}"]`);
+        if (postElement) {
+          const titleSpan = postElement.querySelector('.line-clamp-2');
+          if (titleSpan) titleSpan.textContent = updatedData.title;
+
+          const anchorTag = postElement.querySelector('a') as HTMLAnchorElement;
+          if (anchorTag) {
+            anchorTag.href = `/blogs/${newSlug}`;
+          }
+          
+          // Update data attributes for the post item
+          postElement.setAttribute('data-post-title', updatedData.title);
+          postElement.setAttribute('data-post-slug', newSlug);
+          postElement.setAttribute('data-post-tags', updatedData.tags.join(','));
+          postElement.setAttribute('data-post-content', updatedData.content);
+          
+          // Update edit button data attributes
+          const editBtn = postElement.querySelector('.edit-post-btn');
+          if (editBtn) {
+            editBtn.setAttribute('data-post-title', updatedData.title);
+            editBtn.setAttribute('data-post-slug', newSlug);
+            editBtn.setAttribute('data-post-tags', updatedData.tags.join(','));
+            editBtn.setAttribute('data-post-content', updatedData.content);
+          }
+          
+          // Update delete button data attribute
+          const deleteBtn = postElement.querySelector('.delete-post-btn');
+          if (deleteBtn) {
+            deleteBtn.setAttribute('data-post-title', updatedData.title);
+            deleteBtn.setAttribute('data-post-slug', newSlug);
+          }
+        }
+        
+        // Also update in saved section if present
+        // Also update in saved section if present
+        const originalSlug = editPostSlugInput.value;
+        const savedItem = document.querySelector(`.saved-item[data-saved-slug="${originalSlug}"]`) as HTMLAnchorElement;
+        if (savedItem) {
+          const titleEl = savedItem.querySelector('h4');
+          if (titleEl) titleEl.textContent = updatedData.title;
+          savedItem.href = `/blogs/${newSlug}`;
+          savedItem.setAttribute('data-saved-slug', newSlug); // ← Corrected
+        }
+
+
+        editPostSlugInput.value = newSlug;
+        
+        closeEditDialog();
+        toast.success('Post updated successfully');
+        
+      } catch (err) {
+        console.error(err);
+        toast.error('Network error while updating post');
+      } finally {
+        submitBtn.textContent = originalBtnText;
+        submitBtn.removeAttribute('disabled');
+      }
+    });
+
+    // Delete functionality
     confirmDeleteBtn?.addEventListener('click', async () => {
       if (!currentPostSlug) return;
 
@@ -242,7 +493,7 @@ const { data: saved } = await supabase
 
         if (!response.ok) {
           const err = await response.json();
-          alert(err.message || 'Failed to delete');
+          toast.error(err.message || 'Failed to delete');
           return;
         }
 
@@ -274,19 +525,20 @@ const { data: saved } = await supabase
 
         closeDeleteDialog();
         
-        // Also delete from database (backend already handles this via the API call)
-        // But we also need to delete from the saved table, which your API needs to handle
-
       } catch (err) {
         console.error(err);
-        alert('Network error');
+        toast.error('Network error');
       } finally {
         confirmDeleteBtn.textContent = 'Delete';
       }
     });
 
+    // Handle Escape key for both dialogs
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeDeleteDialog();
+      if (e.key === 'Escape') {
+        closeDeleteDialog();
+        closeEditDialog();
+      }
     });
   });
 </script>
