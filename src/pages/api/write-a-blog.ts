@@ -212,7 +212,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       }),
     });
 
-    return redirect(`/blogs/${slug}`);
+    return redirect(`/`);
   } catch (error) {
     console.error('Error in write-a-blog API route:', error);
     return new Response(

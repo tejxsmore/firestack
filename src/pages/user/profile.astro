@@ -12,6 +12,11 @@ const userEmail = user?.emailAddresses?.[0]?.emailAddress;
 import { Edit, Trash, X } from "lucide-react"
 import toast from "react-hot-toast"
 
+// Add cache control headers to prevent browser caching
+Astro.response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+Astro.response.headers.set('Pragma', 'no-cache');
+Astro.response.headers.set('Expires', '0');
+
 interface Author {
   id: string
   name: string;
@@ -77,7 +82,7 @@ const { data: saved } = await supabase
       <div class="space-y-2">
         <h1 class="text-4xl font-bold">{author.name}</h1>
         <h2 class="text-lg font-semibold text-gray-400">{author.title}</h2>
-        <p class="text-sm text-gray-500">{author.bio}</p>
+        <p class="text-sm text-gray-500 max-w-sm">{author.bio}</p>
 
         <section class="space-y-5 mt-10">
           <h2 class="text-2xl font-semibold">Posts created</h2>
@@ -141,7 +146,7 @@ const { data: saved } = await supabase
   <!-- Confirm Delete Dialog -->
   <div id="confirm-delete-dialog" class="fixed inset-0 z-50 items-center justify-center hidden p-5">
     <div class="absolute inset-0 bg-black bg-opacity-50" id="dialog-overlay"></div>
-    <div class="relative z-10 bg-[#0e0e0e] border border-[#2c2c2c] rounded-[20px] p-5 max-w-md mx-auto">
+    <div class="relative z-10 bg-[#0e0e0e] border border-[#2c2c2c] rounded-[20px] p-5 w-full sm:max-w-md mx-auto">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-semibold text-white">Confirm Delete</h3>
         <button 
@@ -196,6 +201,7 @@ const { data: saved } = await supabase
       
       <form id="edit-post-form" class="space-y-5">
         <input type="hidden" id="edit-post-slug">
+        <input type="hidden" id="edit-original-slug">
         
         <div>
           <label for="edit-post-title" class="block text-sm font-medium text-gray-300 mb-2">Title</label>
@@ -267,6 +273,15 @@ const { data: saved } = await supabase
   import toast from "react-hot-toast";
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Add event listener for page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      // When the page becomes visible again (e.g., after returning via back button)
+      if (document.visibilityState === 'visible') {
+        // Force refresh to get the latest data
+        window.location.reload();
+      }
+    });
+
     // Delete Post Functionality
     const deleteButtons = document.querySelectorAll('.delete-post-btn');
     const confirmDialog = document.getElementById('confirm-delete-dialog');
@@ -287,6 +302,7 @@ const { data: saved } = await supabase
     const editDialogOverlay = document.getElementById('edit-dialog-overlay');
     const editPostForm = document.getElementById('edit-post-form') as HTMLFormElement;
     const editPostSlugInput = document.getElementById('edit-post-slug') as HTMLInputElement;
+    const editOriginalSlugInput = document.getElementById('edit-original-slug') as HTMLInputElement;
     const editPostTitleInput = document.getElementById('edit-post-title') as HTMLInputElement;
     const editPostTagsInput = document.getElementById('edit-post-tags') as HTMLInputElement;
     const editPostContentInput = document.getElementById('edit-post-content') as HTMLTextAreaElement;
@@ -318,7 +334,8 @@ const { data: saved } = await supabase
 
     // Edit dialog functions
     function openEditDialog(title: string, slug: string, tags: string = '', content: string = '') {
-      editPostSlugInput.value = slug;
+      editPostSlugInput.value = slug; // Store the current slug
+      editOriginalSlugInput.value = slug; // Store the original slug
       editPostTitleInput.value = title;
       editPostTagsInput.value = tags;
       editPostContentInput.value = content;
@@ -396,10 +413,13 @@ const { data: saved } = await supabase
       
       const newTitle = editPostTitleInput.value;
       const newSlug = slugify(newTitle);
+      const originalSlug = editOriginalSlugInput.value;
 
-      const updatedData = {
-        slug: editPostSlugInput.value,
-        title: editPostTitleInput.value,
+              const updatedData = {
+        originalSlug: originalSlug, // Send the original slug to the API for reference
+        slug: editPostSlugInput.value, // Keep using the original slug for the API request
+        newSlug: newSlug, // Send the new slug as a separate field
+        title: newTitle,
         tags: editPostTagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag),
         content: editPostContentInput.value,
         authorId: authorId
@@ -408,7 +428,10 @@ const { data: saved } = await supabase
       try {
         const response = await fetch('/api/update', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
           body: JSON.stringify(updatedData),
         });
 
@@ -419,7 +442,7 @@ const { data: saved } = await supabase
         }
 
         // Update the post in the UI
-        const postElement = document.querySelector(`.post-item[data-post-slug="${updatedData.slug}"]`);
+        const postElement = document.querySelector(`.post-item[data-post-slug="${originalSlug}"]`);
         if (postElement) {
           const titleSpan = postElement.querySelector('.line-clamp-2');
           if (titleSpan) titleSpan.textContent = updatedData.title;
@@ -432,8 +455,6 @@ const { data: saved } = await supabase
           // Update data attributes for the post item
           postElement.setAttribute('data-post-title', updatedData.title);
           postElement.setAttribute('data-post-slug', newSlug);
-          postElement.setAttribute('data-post-tags', updatedData.tags.join(','));
-          postElement.setAttribute('data-post-content', updatedData.content);
           
           // Update edit button data attributes
           const editBtn = postElement.querySelector('.edit-post-btn');
@@ -453,19 +474,23 @@ const { data: saved } = await supabase
         }
         
         // Also update in saved section if present
-        // Also update in saved section if present
-        const originalSlug = editPostSlugInput.value;
         const savedItem = document.querySelector(`.saved-item[data-saved-slug="${originalSlug}"]`) as HTMLAnchorElement;
         if (savedItem) {
           const titleEl = savedItem.querySelector('h4');
           if (titleEl) titleEl.textContent = updatedData.title;
           savedItem.href = `/blogs/${newSlug}`;
-          savedItem.setAttribute('data-saved-slug', newSlug); // ← Corrected
+          savedItem.setAttribute('data-saved-slug', newSlug);
         }
 
+        // Store updated info in sessionStorage to handle back button navigation
+        sessionStorage.setItem(`post_${newSlug}`, JSON.stringify({
+          title: updatedData.title,
+          slug: newSlug,
+          originalSlug: originalSlug,
+          tags: updatedData.tags.join(','),
+          content: updatedData.content
+        }));
 
-        editPostSlugInput.value = newSlug;
-        
         closeEditDialog();
         toast.success('Post updated successfully');
         
@@ -487,7 +512,10 @@ const { data: saved } = await supabase
       try {
         const response = await fetch('/api/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          },
           body: JSON.stringify({ slug: currentPostSlug }),
         });
 
@@ -523,6 +551,9 @@ const { data: saved } = await supabase
           }
         }
 
+        // Mark as deleted in sessionStorage
+        sessionStorage.setItem(`deleted_post_${currentPostSlug}`, 'true');
+
         closeDeleteDialog();
         
       } catch (err) {
@@ -539,6 +570,101 @@ const { data: saved } = await supabase
         closeDeleteDialog();
         closeEditDialog();
       }
+    });
+
+    // Function to check and apply any stored updates that might have occurred
+    function applyStoredUpdates() {
+      // Check for all items in sessionStorage that start with 'post_'
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('post_')) {
+          try {
+            const storedData = JSON.parse(sessionStorage.getItem(key) || '{}');
+            const { title, slug, originalSlug, tags, content } = storedData;
+            
+            // Find post by original slug
+            const postElement = document.querySelector(`.post-item[data-post-slug="${originalSlug}"]`);
+            if (postElement) {
+              // Update the element with new data
+              const titleSpan = postElement.querySelector('.line-clamp-2');
+              if (titleSpan) titleSpan.textContent = title;
+
+              const anchorTag = postElement.querySelector('a') as HTMLAnchorElement;
+              if (anchorTag) anchorTag.href = `/blogs/${slug}`;
+              
+              postElement.setAttribute('data-post-title', title);
+              postElement.setAttribute('data-post-slug', slug);
+              
+              // Update buttons
+              const editBtn = postElement.querySelector('.edit-post-btn');
+              if (editBtn) {
+                editBtn.setAttribute('data-post-title', title);
+                editBtn.setAttribute('data-post-slug', slug);
+                editBtn.setAttribute('data-post-tags', tags);
+                editBtn.setAttribute('data-post-content', content);
+              }
+              
+              const deleteBtn = postElement.querySelector('.delete-post-btn');
+              if (deleteBtn) {
+                deleteBtn.setAttribute('data-post-title', title);
+                deleteBtn.setAttribute('data-post-slug', slug);
+              }
+            }
+            
+            // Update in saved section if present
+            const savedItem = document.querySelector(`.saved-item[data-saved-slug="${originalSlug}"]`) as HTMLAnchorElement;
+            if (savedItem) {
+              const titleEl = savedItem.querySelector('h4');
+              if (titleEl) titleEl.textContent = title;
+              savedItem.href = `/blogs/${slug}`;
+              savedItem.setAttribute('data-saved-slug', slug);
+            }
+          } catch (e) {
+            console.error('Error applying stored updates:', e);
+          }
+        }
+      });
+      
+      // Check for deleted posts
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('deleted_post_')) {
+          const deletedSlug = key.replace('deleted_post_', '');
+          
+          // Remove from posts section if it exists
+          const postElement = document.querySelector(`.post-item[data-post-slug="${deletedSlug}"]`);
+          if (postElement && postsContainer) {
+            postElement.remove();
+            // Update numbering
+            const remaining = postsContainer.querySelectorAll('.post-item');
+            remaining.forEach((item, index) => {
+              const number = item.querySelector('.text-gray-400');
+              if (number) number.textContent = `${index + 1}.`;
+            });
+          }
+          
+          // Remove from saved section if it exists
+          if (savedItemsContainer) {
+            const savedItem = savedItemsContainer.querySelector(`[data-saved-slug="${deletedSlug}"]`);
+            if (savedItem) {
+              savedItem.remove();
+              
+              // If there are no more saved items, hide the entire saved section
+              const remainingSavedItems = savedItemsContainer.querySelectorAll('.saved-item');
+              if (remainingSavedItems.length === 0 && savedContainer) {
+                savedContainer.classList.add('hidden');
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Apply any stored updates when page loads
+    applyStoredUpdates();
+
+    // Listen for popstate events (browser back/forward navigation)
+    window.addEventListener('popstate', () => {
+      // Apply stored updates when navigating back
+      applyStoredUpdates();
     });
   });
 </script>
