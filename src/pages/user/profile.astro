@@ -182,7 +182,7 @@ const { data: saved } = await supabase
   <div id="edit-post-dialog" class="fixed inset-0 z-50 items-center justify-center hidden p-5">
     <div class="absolute inset-0 bg-black bg-opacity-50" id="edit-dialog-overlay"></div>
     <div class="relative z-10 bg-[#0e0e0e] border border-[#2c2c2c] rounded-[20px] p-5 max-w-3xl mx-auto w-full">
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between items-center mb-5">
         <h3 class="text-xl font-semibold text-white">Edit Post</h3>
         <button 
           id="close-edit-dialog-btn"
@@ -194,7 +194,7 @@ const { data: saved } = await supabase
         </button>
       </div>
       
-      <form id="edit-post-form" class="space-y-6">
+      <form id="edit-post-form" class="space-y-5">
         <input type="hidden" id="edit-post-slug">
         
         <div>
@@ -202,8 +202,8 @@ const { data: saved } = await supabase
           <input 
             type="text" 
             id="edit-post-title" 
-            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-[16px] 
+            focus:outline-none focus:border-[#3A59D1] text-white"
             placeholder="Post title"
           >
         </div>
@@ -213,8 +213,8 @@ const { data: saved } = await supabase
           <input 
             type="text" 
             id="edit-post-tags" 
-            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-[16px] 
+            focus:outline-none focus:border-[#3A59D1] text-white"
             placeholder="tag1, tag2, tag3"
           >
         </div>
@@ -223,8 +223,8 @@ const { data: saved } = await supabase
           <label for="edit-post-content" class="block text-sm font-medium text-gray-300 mb-2">Content</label>
           <textarea 
             id="edit-post-content" 
-            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white h-64"
+            class="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2c2c2c] rounded-[16px] 
+            focus:outline-none focus:border-[#3A59D1] text-white h-64 resize-none"
             placeholder="Post content"
           ></textarea>
         </div>
@@ -241,7 +241,7 @@ const { data: saved } = await supabase
           <button 
             type="submit"
             id="submit-edit-btn"
-            class="px-6 py-3 text-white bg-[#1a365d] border border-blue-900 
+            class="px-6 py-3 text-white bg-[#3A59D1] border border-[#3A59D1] 
             hover:bg-blue-900 transition-colors rounded-[16px] cursor-pointer"
           >
             Update Post

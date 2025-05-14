@@ -1,9 +1,8 @@
 import type { APIRoute } from "astro";
 import { getSupabase } from "../../lib/supabase";
 
-const supabase = getSupabase()
+const supabase = getSupabase();
 
-// Utility to slugify titles and tag names
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -17,7 +16,6 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const { slug: oldSlug, title, content, tags, authorId } = await request.json();
 
-    // Validate required fields
     if (!oldSlug || !title || !content || !authorId) {
       return new Response(
         JSON.stringify({ success: false, message: "Missing required fields" }),
@@ -25,10 +23,9 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Generate new slug
     const newSlug = slugify(title);
 
-    // Step 1: Get post ID by old slug
+    // Step 1: Get post ID and current tags
     const findPostRes = await fetch(import.meta.env.HYGRAPH_API, {
       method: "POST",
       headers: {
@@ -40,6 +37,9 @@ export const POST: APIRoute = async ({ request }) => {
           query GetPostBySlug($slug: String!) {
             post(where: { slug: $slug }) {
               id
+              tag {
+                slug
+              }
             }
           }
         `,
@@ -48,100 +48,121 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     const findPostData = await findPostRes.json();
-    const postId = findPostData?.data?.post?.id;
+    const post = findPostData?.data?.post;
 
-    if (!postId) {
+    if (!post?.id) {
       return new Response(
         JSON.stringify({ success: false, message: "Post not found" }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Step 2: Resolve tag slugs, and create tags if necessary
-    let resolvedTagSlugs: string[] = [];
-    if (Array.isArray(tags) && tags.length > 0) {
-      const existingTagsQuery = `
-        query GetTagsByNames($names: [String!]) {
-          tags(where: { name_in: $names }) {
-            slug
-          }
-        }
-      `;
+    const postId = post.id;
+    const existingTagSlugs = post.tag?.map((tag: { slug: string }) => tag.slug) || [];
 
-      try {
-        // Fetch existing tags by name
-        const tagRes = await fetch(import.meta.env.HYGRAPH_API, {
+    // Step 2: Resolve and/or create new tags
+    let resolvedTagSlugs: string[] = [];
+    const inputTagSlugs = Array.isArray(tags) ? tags.map(slugify) : [];
+
+    if (inputTagSlugs.length > 0) {
+      // Fetch existing tags
+      const tagRes = await fetch(import.meta.env.HYGRAPH_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.HYGRAPH_MUTATION_TOKEN}`,
+        },
+        body: JSON.stringify({
+          query: `
+            query GetTagsByNames($names: [String!]) {
+              tags(where: { name_in: $names }) {
+                slug
+                name
+              }
+            }
+          `,
+          variables: { names: tags },
+        }),
+      });
+
+      const tagData = await tagRes.json();
+      const existingTags = tagData?.data?.tags ?? [];
+      resolvedTagSlugs = existingTags.map((tag: { slug: string }) => tag.slug);
+
+      // Create new tags if needed
+      const newTags = tags.filter((tag: string) => !resolvedTagSlugs.includes(slugify(tag)));
+
+      for (const name of newTags) {
+        const slug = slugify(name);
+
+        // Create tag
+        const createTagRes = await fetch(import.meta.env.HYGRAPH_API, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.HYGRAPH_MUTATION_TOKEN}`,
           },
           body: JSON.stringify({
-            query: existingTagsQuery,
-            variables: { names: tags },
+            query: `
+              mutation CreateTag($name: String!, $slug: String!) {
+                createTag(data: { name: $name, slug: $slug }) {
+                  slug
+                }
+              }
+            `,
+            variables: { name, slug },
           }),
         });
 
-        const tagData = await tagRes.json();
-        if (tagRes.ok && tagData?.data?.tags) {
-          const existingTags = tagData.data.tags ?? [];
-          resolvedTagSlugs = existingTags.map((tag: { slug: string }) => tag.slug);
-        } else {
-          throw new Error('Failed to fetch existing tags');
-        }
+        const createData = await createTagRes.json();
+        const createdSlug = createData?.data?.createTag?.slug;
 
-        // Find tags that need to be created
-        const newTags = tags.filter((tag: string) => !resolvedTagSlugs.includes(slugify(tag)));
-
-        // If there are new tags, create them
-        if (newTags.length > 0) {
-          const createTagsMutation = `
-            mutation CreateTags($names: [String!]) {
-              createTags(data: $names) {
-                slug
-              }
-            }
-          `;
-
-          const createTagsRes = await fetch(import.meta.env.HYGRAPH_API, {
+        if (createdSlug) {
+          // Publish the tag
+          await fetch(import.meta.env.HYGRAPH_API, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.HYGRAPH_MUTATION_TOKEN}`,
             },
             body: JSON.stringify({
-              query: createTagsMutation,
-              variables: { names: newTags },
+              query: `
+                mutation PublishTag($slug: String!) {
+                  publishTag(where: { slug: $slug }) {
+                    slug
+                  }
+                }
+              `,
+              variables: { slug: createdSlug },
             }),
           });
 
-          const createdTagsData = await createTagsRes.json();
-          if (createTagsRes.ok && createdTagsData?.data?.createTags) {
-            const createdTags = createdTagsData.data.createTags ?? [];
-            resolvedTagSlugs = [
-              ...resolvedTagSlugs,
-              ...createdTags.map((tag: { slug: string }) => tag.slug),
-            ];
-          } else {
-            throw new Error('Failed to create new tags');
-          }
+          // Add a small delay to ensure the tag is ready
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          resolvedTagSlugs.push(createdSlug);
+        } else {
+          console.error("Failed to create tag:", name);
         }
-      } catch (error) {
-        console.error('Error resolving tags:', error);
-        // Handle error, maybe notify user
       }
     }
 
-    // Step 3: Construct GraphQL mutation
+    // Step 3: Prepare tag connections
+    const tagsToConnect = resolvedTagSlugs.filter(slug => !existingTagSlugs.includes(slug));
+    const tagsToDisconnect = existingTagSlugs.filter((slug: string) => !resolvedTagSlugs.includes(slug));
+
+    const tagConnections = `
+      tag: {
+        ${tagsToConnect.length ? `connect: [${tagsToConnect.map(slug => `{ where: { slug: "${slug}" } }`).join(", ")}],` : ""}
+        ${tagsToDisconnect.length ? `disconnect: [${tagsToDisconnect.map((slug: string) => `{ slug: "${slug}" }`).join(", ")}],` : ""}
+      },
+    `;
+
+    // Step 4: Update the post
     const escapedTitle = title.replace(/"/g, '\\"');
     const escapedContent = content
       .replace(/\\/g, "\\\\")
       .replace(/"/g, '\\"')
       .replace(/\n/g, "\\n");
-
-    const tagConnections = resolvedTagSlugs.length
-      ? `tag: { connect: [${resolvedTagSlugs.map(slug => `{ where: { slug: "${slug}" } }`).join(",\n")}] },`
-      : "";
 
     const mutation = `
       mutation UpdatePost {
@@ -165,7 +186,6 @@ export const POST: APIRoute = async ({ request }) => {
       }
     `;
 
-    // Step 4: Send update mutation
     const updateRes = await fetch(import.meta.env.HYGRAPH_API, {
       method: "POST",
       headers: {
@@ -192,9 +212,8 @@ export const POST: APIRoute = async ({ request }) => {
     // Step 5: Update Supabase references if slug changed
     if (newSlug !== oldSlug) {
       try {
-        await supabase.from("saved").update({ slug: newSlug, title: title }).eq("slug", oldSlug);
-        await supabase.from("liked").update({ slug: newSlug, title: title }).eq("slug", oldSlug);
-        
+        await supabase.from("saved").update({ slug: newSlug, title }).eq("slug", oldSlug);
+        await supabase.from("liked").update({ slug: newSlug, title }).eq("slug", oldSlug);
       } catch (error) {
         console.error("Supabase update error:", error);
       }

@@ -21,13 +21,13 @@ interface Post {
   content: string;
 }
 
-const query = {
+const response = await fetch(import.meta.env.HYGRAPH_API, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     query: `
-      {
-        posts {
+      query GetPostBySlug($slug: String!) {
+        post(where: { slug: $slug }) {
           title
           slug
           author {
@@ -41,14 +41,18 @@ const query = {
           date
           content
         }
-      }`,
+      }
+    `,
+    variables: { slug: blog },
   }),
-};
+});
 
-const response = await fetch(import.meta.env.HYGRAPH_API, query);
 const json = await response.json();
-const post: Post | null = json.data.posts.find((p: Post) => p.slug === blog);
+const post: Post | null = json.data?.post ?? null;
 
+if (!post) {
+  throw new Error("Post not found");
+}
 
 function formatDate(isoDate: string) {
   const [year, month, day] = isoDate.split('-').map(Number);
