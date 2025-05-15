@@ -6,10 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 
 import vercel from '@astrojs/vercel';
 
-import solidJs from '@astrojs/solid-js';
-
 export default defineConfig({
-  integrations: [react(), clerk(), solidJs()],
+  integrations: [react(), clerk()],
   adapter: vercel(),
   vite: {
     plugins: [tailwindcss()],
